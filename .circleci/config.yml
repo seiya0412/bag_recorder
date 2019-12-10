@@ -1,0 +1,27 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: ros:melodic-ros-base
+
+    shell: /bin/bash
+    working_directory: ~/catkin_ws/src/bag_recorder
+    environment:
+     DEBIAN_FRONTEND: noninteractive
+
+    steps:
+      - checkout
+      
+      - run:
+          name: Resolve dependencies
+          command: |
+           apt-get update -qq
+           rosdep install -y --from-paths .. --ignore-src --rosdistro=melodic
+
+      - run:
+          name: catkin_make
+          command: |
+           source /opt/ros/melodic/setup.bash
+           cd ~/catkin_ws
+           catkin_make
+          
