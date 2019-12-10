@@ -62,6 +62,25 @@ enum class RecorderMode
   DRIVING_RECORDER,
 };
 
+enum class QueueState
+{
+  IDLE = 0,
+  FILLING,
+  FILLED,
+  RECORDING,
+  CLOSING,
+  SIZE
+};
+
+enum class QueueAction
+{
+  NONE = 0,
+  START_QUEUEING,
+  START_RECORDING,
+  STOP_RECORDING,
+  TIMEOUT,
+  SIZE
+};
 class OutgoingMessage
 {
 public:
@@ -92,6 +111,7 @@ public:
   bool is_subscribed_to(std::string topic); //-- if the BagRecorder is currently subscribed to this topic
 
   std::string get_bagname(); //-- gets the bag name currently being recoreded to
+  QueueState get_queue_state();
 
 private:
   //generates a subcriber
@@ -110,6 +130,8 @@ private:
   //helper function to generate bag__name
   static std::string get_time_str(); //-- turns  ros time into string
 
+  void queue_state_controller(QueueAction queue_action);
+
 private:
   //my data
   std::string data_folder_;
@@ -123,6 +145,9 @@ private:
   rosbag::Bag bag_;
   std::string bag_filename_ = ""; //initialized in cas get_bagname is called
   bool bag_active_ = false;       //is by default not active
+  QueueState queue_state_ = QueueState::IDLE;
+  ros::Time queue_start_time_ = ros::Time(0);
+  ros::Time record_start_time_ = ros::Time(0);
 
   //stop signals
   bool clear_queue_signal_;

@@ -155,6 +155,7 @@ bool BagRecorder::start_queueing(std::vector<std::string> topics, bool record_al
     ROS_ERROR("No Topics Supplied to be recorded. Aborting.");
     return false;
   }
+  queue_state_controller(QueueAction::START_QUEUEING);
   return true;
 }
 
@@ -298,6 +299,16 @@ std::string BagRecorder::get_bagname()
 }
 
 /**
+* @brief get_queue_state() returns the stete of topic queue being subscribed to
+* @return returns queue_state_
+* @details returns the class variable of the queue_state_
+*/
+QueueState BagRecorder::get_queue_state()
+{
+  return queue_state_;
+}
+
+/**
 * @brief can_log() checks class variables to make sure it is safe to write to file
 * @return true if safe to write, false if not
 * @details basically returnes checks_failed_, also issues an warning every
@@ -380,36 +391,68 @@ void BagRecorder::subscriber_callback(const ros::MessageEvent<topic_tools::Shape
   //generates new outgoing message
   OutgoingMessage out(topic, msg_event.getMessage(), msg_event.getConnectionHeaderPtr(), rectime);
 
-  // Stateによる分岐ここ。(subscriber state)
-  /*
-    switch(state)
-    {
-      case init:
-        message_queue_->push(out);
-        break;
-      case buffering:
-        message_queue_->push(out);
-        message_queue_->pop();
-        break;
-      case recording:
-        message_queue_->push(out);
-        break;
-      case finalizing:
-        // Ignore latest message
-        break;
-      default:
-        break;
-      }
-  */
-
   { //writes message to queue
     boost::mutex::scoped_lock queue_lock(queue_mutex_);
-    message_queue_->push(out);
+    switch (queue_state_)
+    {
+    case QueueState::FILLING:
+      message_queue_->push(out);
+      break;
+    case QueueState::FILLED:
+      message_queue_->push(out);
+      message_queue_->pop();
+      break;
+    case QueueState::RECORDING:
+      message_queue_->push(out);
+      break;
+    case QueueState::CLOSING:
+      // Ignore latest message
+      break;
+    default:
+      break;
+    }
   }
 
   //notify write thread
   queue_condition_.notify_all();
 } // subscriber_callback()
+
+void BagRecorder::queue_state_controller(QueueAction queue_action)
+{
+  const QueueState state_matrix[static_cast<int>(QueueState::SIZE)][static_cast<int>(QueueAction::SIZE)] =
+      {
+          // NONE              START_QUEUEING       START_RECORDING   STOP_RECORDING    TIMEOUT
+          {QueueState::IDLE, QueueState::FILLING, QueueState::IDLE, QueueState::IDLE, QueueState::IDLE},                   // IDLE
+          {QueueState::FILLING, QueueState::FILLING, QueueState::RECORDING, QueueState::FILLING, QueueState::FILLED},      // FILLING
+          {QueueState::FILLED, QueueState::FILLED, QueueState::RECORDING, QueueState::FILLED, QueueState::FILLED},         // FILLED
+          {QueueState::RECORDING, QueueState::RECORDING, QueueState::RECORDING, QueueState::CLOSING, QueueState::CLOSING}, // RECORDING
+          {QueueState::CLOSING, QueueState::FILLING, QueueState::CLOSING, QueueState::CLOSING, QueueState::CLOSING},       // CLOSING
+      };
+
+  ros::Time now = ros::Time::now();
+  if (queue_state_ == QueueState::CLOSING && message_queue_->empty())
+  {
+    queue_action = QueueAction::START_QUEUEING;
+  }
+  if (queue_action == QueueAction::START_QUEUEING)
+  {
+    queue_start_time_ = now;
+  }
+  if (queue_action == QueueAction::START_RECORDING)
+  {
+    record_start_time_ = now;
+  }
+  if (queue_action == QueueAction::NONE && queue_state_ == QueueState::FILLING && now - queue_start_time_ > ros::Duration(3.0))
+  {
+    queue_action = QueueAction::TIMEOUT;
+  }
+  if (queue_action == QueueAction::NONE && queue_state_ == QueueState::RECORDING && now - record_start_time_ > ros::Duration(5.0))
+  {
+    queue_action = QueueAction::TIMEOUT;
+  }
+
+  queue_state_ = state_matrix[static_cast<int>(queue_state_)][static_cast<int>(queue_action)];
+}
 
 /**
 * @brief queue_processor() actually opens the bag file, writes and closes the bag file
