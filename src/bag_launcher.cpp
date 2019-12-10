@@ -34,7 +34,7 @@ BLOptions::BLOptions() : configuration_directory("/data/"),
 */
 BagLauncher::BagLauncher(ros::NodeHandle nh, BLOptions options) : nh_(nh), config_location_(options.configuration_directory), data_folder_(options.data_directory),
                                                                   record_start_subscriber_(nh.subscribe(options.record_start_topic, 10, &BagLauncher::create_recorder, this)),
-                                                                  record_stop_subscriber_(nh.subscribe(options.record_stop_topic, 10, &BagLauncher::Stop_Recording, this)),
+                                                                  record_stop_subscriber_(nh.subscribe(options.record_stop_topic, 10, &BagLauncher::destroy_recorder, this)),
                                                                   publish_name_(options.publish_name), publish_heartbeat_(options.publish_heartbeat),
                                                                   heartbeat_topic_(options.heartbeat_topic), heartbeat_interval_(options.heartbeat_interval),
                                                                   default_record_all_(options.default_record_all)
@@ -168,15 +168,10 @@ void BagLauncher::start_recording(const std::string &config, const std::string &
   return;
 } // Start_Recording()
 
-/**
-* @brief Stop_Recording() stops a bag of a certain configuration
-* @param [in] msg ROS string msg containing config type to stop
-* @details finds recorder in map by config name, stops it
-*/
-void BagLauncher::Stop_Recording(const std_msgs::String::ConstPtr &msg)
+void BagLauncher::stop_recording(const std::string &config)
 {
   //find recorder in map
-  std::map<std::string, std::shared_ptr<BagRecorder>>::iterator recorder = recorders_.find(msg->data);
+  std::map<std::string, std::shared_ptr<BagRecorder>>::iterator recorder = recorders_.find(config);
 
   //make sure it exists
   //we do this because a faulty name could be published to us in the message
@@ -185,12 +180,44 @@ void BagLauncher::Stop_Recording(const std_msgs::String::ConstPtr &msg)
   {
     //stop the bag
     recorder->second->stop_recording();
-    ROS_INFO("%s configuration recorder stopped.", msg->data.c_str());
+    recorder->second->stop_queueing();
+    ROS_INFO("%s configuration recorder stopped.", config.c_str());
   }
   else
   {
-    ROS_INFO("%s configuration recorder did not exist.", msg->data.c_str());
+    ROS_INFO("%s configuration recorder did not exist.", config.c_str());
   }
+}
+
+void BagLauncher::stop_queueing(const std::string &config)
+{
+  //find recorder in map
+  std::map<std::string, std::shared_ptr<BagRecorder>>::iterator recorder = recorders_.find(config);
+
+  //make sure it exists
+  //we do this because a faulty name could be published to us in the message
+  //we can't assume we are actually recording msg->data
+  if (recorder != recorders_.end())
+  {
+    //stop the bag
+    recorder->second->stop_queueing();
+    ROS_INFO("%s configuration queueing stopped.", config.c_str());
+  }
+  else
+  {
+    ROS_INFO("%s configuration recorder did not exist.", config.c_str());
+  }
+}
+
+/**
+* @brief Stop_Recording() stops a bag of a certain configuration
+* @param [in] msg ROS string msg containing config type to stop
+* @details finds recorder in map by config name, stops it
+*/
+void BagLauncher::destroy_recorder(const std_msgs::String::ConstPtr &msg)
+{
+  stop_recording(msg->data);
+  stop_queueing(msg->data);
 
   if (publish_heartbeat_)
   {

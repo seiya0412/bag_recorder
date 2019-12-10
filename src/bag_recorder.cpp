@@ -220,6 +220,7 @@ std::string BagRecorder::start_recording(std::string bag_name)
   }
 
   // start write thread
+  queue_state_controller(QueueAction::START_RECORDING);
   record_thread_ = boost::thread(boost::bind(&BagRecorder::queue_processor, this));
   queue_condition_.notify_all();
 
@@ -239,15 +240,17 @@ void BagRecorder::stop_recording()
     return;
 
   clear_queue_signal_ = true;
+  ROS_INFO("Stopping BagRecorder, clearing queue.");
+}
 
+void BagRecorder::stop_queueing()
+{
   //note that start_stop_lock is acting as a lock for both subscribers_
   //and also for subscribed_topics_
   foreach (boost::shared_ptr<ros::Subscriber> sub, subscribers_)
     sub->shutdown();
 
   subscribed_topics_.clear();
-
-  ROS_INFO("Stopping BagRecorder, clearing queue.");
 } // stop_recording()
 
 /**
@@ -451,7 +454,9 @@ void BagRecorder::queue_state_controller(QueueAction queue_action)
     queue_action = QueueAction::TIMEOUT;
   }
 
+  QueueState prev_state = queue_state_;
   queue_state_ = state_matrix[static_cast<int>(queue_state_)][static_cast<int>(queue_action)];
+  ROS_INFO_COND(prev_state != queue_state_, "State changed: from %d to %d", static_cast<int>(prev_state), static_cast<int>(queue_state_));
 }
 
 /**
