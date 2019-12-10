@@ -51,64 +51,67 @@
 #include <string>
 #include <vector>
 
-namespace bag_launcher_node {
+namespace bag_launcher_node
+{
 
-    using namespace bag_recorder;
+using namespace bag_recorder;
 
-    struct BLOptions {
-        //initializes a struct of BagLauncher options with default values
-        BLOptions();
+struct BLOptions
+{
+  //initializes a struct of BagLauncher options with default values
+  BLOptions();
 
-        //! location to read config files from
-        std::string configuration_directory;
-        //! location to record bags to
-        std::string data_directory;
-        //! topic to listen to for start commands
-        std::string record_start_topic;
-        //! topic to listen to for stop commands
-        std::string record_stop_topic;
-        //! boolean whether or not to publish the bag name
-        bool publish_name;
-        //! if publish_name, topic to publish name to
-        std::string name_topic;
-        //! boolean whether or not to publish a heartbeat that the bag is recording
-        bool publish_heartbeat;
-        //! if publish_heartbeat, topic to publish a heartbeat to
-        std::string heartbeat_topic;
-        //! if publish_heartbeat, interval in seconds on which to publish the heartbeat
-        double heartbeat_interval;
-        //! if no config of a given name is found, default to record all if true
-        bool default_record_all;
-    };
+  //! location to read config files from
+  std::string configuration_directory;
+  //! location to record bags to
+  std::string data_directory;
+  //! topic to listen to for start commands
+  std::string record_start_topic;
+  //! topic to listen to for stop commands
+  std::string record_stop_topic;
+  //! boolean whether or not to publish the bag name
+  bool publish_name;
+  //! if publish_name, topic to publish name to
+  std::string name_topic;
+  //! boolean whether or not to publish a heartbeat that the bag is recording
+  bool publish_heartbeat;
+  //! if publish_heartbeat, topic to publish a heartbeat to
+  std::string heartbeat_topic;
+  //! if publish_heartbeat, interval in seconds on which to publish the heartbeat
+  double heartbeat_interval;
+  //! if no config of a given name is found, default to record all if true
+  bool default_record_all;
+};
 
-    class BagLauncher {
-        public:
-            BagLauncher(ros::NodeHandle nh, BLOptions options);
-            ~BagLauncher();
+class BagLauncher
+{
+public:
+  BagLauncher(ros::NodeHandle nh, BLOptions options);
+  ~BagLauncher();
 
-            void check_all();
+  void check_all();
 
-        private:
-            void Start_Recording(const bag_recorder::Rosbag::ConstPtr& msg);
-            void Stop_Recording(const std_msgs::String::ConstPtr& msg);
-            std::string sanitize_topic(std::string topic);
-            bool load_config(std::string config_file_name, std::vector<std::string>& topics, std::set<std::string> loaded = std::set<std::string>());
+private:
+  void Start_Recording(const bag_recorder::Rosbag::ConstPtr &msg);
+  void Stop_Recording(const std_msgs::String::ConstPtr &msg);
+  std::string sanitize_topic(std::string topic);
+  bool load_config(std::string config_file_name, std::vector<std::string> &topics, std::set<std::string> loaded = std::set<std::string>());
 
-        private:
-            ros::NodeHandle nh_;
-            std::string config_location_;
-            std::string data_folder_;
-            ros::Subscriber record_start_subscriber_;
-            ros::Subscriber record_stop_subscriber_;
-            bool publish_name_;
-            bool publish_heartbeat_;
-            std::string heartbeat_topic_;
-            double heartbeat_interval_;
-            ros::Publisher name_publisher_;
-            bool default_record_all_;
+private:
+  ros::NodeHandle nh_;
+  std::string config_location_;
+  std::string data_folder_;
+  ros::Subscriber record_start_subscriber_;
+  ros::Subscriber record_stop_subscriber_;
+  bool publish_name_;
+  bool publish_heartbeat_;
+  std::string heartbeat_topic_;
+  double heartbeat_interval_;
+  ros::Publisher name_publisher_;
+  bool default_record_all_;
 
-            std::map<std::string, std::shared_ptr<HeartBeat>> heartbeats_;
-            std::map<std::string, std::shared_ptr<BagRecorder>> recorders_;
-    }; //BagLauncher
+  std::map<std::string, std::shared_ptr<HeartBeat>> heartbeats_;
+  std::map<std::string, std::shared_ptr<BagRecorder>> recorders_;
+}; //BagLauncher
 
-} // bag_launcher_node
+} // namespace bag_launcher_node
