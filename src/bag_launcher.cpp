@@ -39,7 +39,9 @@ BagLauncher::BagLauncher(ros::NodeHandle nh, BLOptions options) : nh_(nh), confi
                                                                   heartbeat_topic_(options.heartbeat_topic), heartbeat_interval_(options.heartbeat_interval),
                                                                   default_record_all_(options.default_record_all)
 {
-
+  record_start_server_ = nh_.advertiseService("start_recording", &BagLauncher::start_recording_callback, this);
+  record_stop_server_ = nh_.advertiseService("stop_recording", &BagLauncher::stop_recording_callback, this);
+  queue_state_server_ = nh_.advertiseService("get_queue_state", &BagLauncher::get_queue_state, this);
   if (options.publish_name)
   {
     name_publisher_ = nh.advertise<bag_recorder::Rosbag>(sanitize_topic(options.name_topic), 5);
@@ -143,6 +145,27 @@ bool BagLauncher::start_queueing(const std::string &config)
   return true;
 }
 
+bool BagLauncher::start_recording_callback(bag_recorder::StartRecording::Request &req,
+                                           bag_recorder::StartRecording::Response &res)
+{
+  start_recording(req.config, req.bag_name);
+  return true;
+}
+bool BagLauncher::stop_recording_callback(bag_recorder::StopRecording::Request &req,
+                                          bag_recorder::StopRecording::Response &res)
+{
+  stop_recording(req.config);
+  res.bag_name = "test";
+  return true;
+}
+
+bool BagLauncher::get_queue_state(bag_recorder::GetQueueState::Request &req,
+                                  bag_recorder::GetQueueState::Response &res)
+{
+  res.queue_state = static_cast<int>(recorders_[req.config]->get_queue_state());
+  return true;
+}
+
 void BagLauncher::start_recording(const std::string &config, const std::string &bag_name)
 {
   std::string full_bag_name = "";
@@ -180,7 +203,6 @@ void BagLauncher::stop_recording(const std::string &config)
   {
     //stop the bag
     recorder->second->stop_recording();
-    recorder->second->stop_queueing();
     ROS_INFO("%s configuration recorder stopped.", config.c_str());
   }
   else

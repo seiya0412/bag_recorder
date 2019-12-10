@@ -1,0 +1,3 @@
+string config
+---
+int8 queue_state

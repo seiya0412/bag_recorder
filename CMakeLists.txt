@@ -20,6 +20,12 @@ add_message_files(FILES
   Rosbag.msg
 )
 
+add_service_files(FILES
+  StartRecording.srv
+  StopRecording.srv
+  GetQueueState.srv
+  )
+
 generate_messages(
   DEPENDENCIES
   std_msgs

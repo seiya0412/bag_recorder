@@ -40,6 +40,9 @@
 #include <ros/ros.h>
 #include <std_msgs/String.h>
 #include <bag_recorder/Rosbag.h>
+#include <bag_recorder/StartRecording.h>
+#include <bag_recorder/StopRecording.h>
+#include <bag_recorder/GetQueueState.h>
 
 //Bag Recorder
 #include <bag_recorder/bag_recorder.h>
@@ -101,12 +104,22 @@ private:
   std::string sanitize_topic(std::string topic);
   bool load_config(std::string config_file_name, std::vector<std::string> &topics, std::set<std::string> loaded = std::set<std::string>());
 
+  bool start_recording_callback(bag_recorder::StartRecording::Request &req,
+                                bag_recorder::StartRecording::Response &res);
+  bool stop_recording_callback(bag_recorder::StopRecording::Request &req,
+                               bag_recorder::StopRecording::Response &res);
+  bool get_queue_state(bag_recorder::GetQueueState::Request &req,
+                       bag_recorder::GetQueueState::Response &res);
+
 private:
   ros::NodeHandle nh_;
   std::string config_location_;
   std::string data_folder_;
   ros::Subscriber record_start_subscriber_;
   ros::Subscriber record_stop_subscriber_;
+  ros::ServiceServer record_start_server_;
+  ros::ServiceServer record_stop_server_;
+  ros::ServiceServer queue_state_server_;
   bool publish_name_;
   bool publish_heartbeat_;
   std::string heartbeat_topic_;
