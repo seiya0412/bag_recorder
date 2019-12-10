@@ -240,6 +240,7 @@ void BagRecorder::stop_recording()
     return;
 
   clear_queue_signal_ = true;
+  queue_state_controller(QueueAction::STOP_RECORDING);
   ROS_INFO("Stopping BagRecorder, clearing queue.");
 }
 
@@ -391,6 +392,8 @@ void BagRecorder::subscriber_callback(const ros::MessageEvent<topic_tools::Shape
 
   Time rectime = Time::now();
 
+  queue_state_controller(QueueAction::NONE);
+
   //generates new outgoing message
   OutgoingMessage out(topic, msg_event.getMessage(), msg_event.getConnectionHeaderPtr(), rectime);
 
@@ -409,6 +412,7 @@ void BagRecorder::subscriber_callback(const ros::MessageEvent<topic_tools::Shape
       message_queue_->push(out);
       break;
     case QueueState::CLOSING:
+      stop_recording();
       // Ignore latest message
       break;
     default:
@@ -449,7 +453,7 @@ void BagRecorder::queue_state_controller(QueueAction queue_action)
   {
     queue_action = QueueAction::TIMEOUT;
   }
-  if (queue_action == QueueAction::NONE && queue_state_ == QueueState::RECORDING && now - record_start_time_ > ros::Duration(5.0))
+  if (queue_action == QueueAction::NONE && queue_state_ == QueueState::RECORDING && now - record_start_time_ > ros::Duration(30.0))
   {
     queue_action = QueueAction::TIMEOUT;
   }
