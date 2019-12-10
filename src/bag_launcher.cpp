@@ -71,7 +71,17 @@ void BagLauncher::Start_Recording(const bag_recorder::Rosbag::ConstPtr &msg)
   //if it does not exists make it.
   if (recorder == recorders_.end())
   {
-    std::shared_ptr<BagRecorder> new_recorder(new BagRecorder(data_folder_));
+    RecorderMode recorder_mode;
+    if (msg->recorder_mode.compare("driving_recorder"))
+    {
+      recorder_mode = RecorderMode::DRIVING_RECORDER;
+    }
+    else
+    {
+      recorder_mode = RecorderMode::DEFAULT;
+    }
+
+    std::shared_ptr<BagRecorder> new_recorder(new BagRecorder(data_folder_, true, recorder_mode));
     recorders_[msg->config] = new_recorder;
   }
 

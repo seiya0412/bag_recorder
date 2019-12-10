@@ -56,6 +56,12 @@
 namespace bag_recorder
 {
 
+enum class RecorderMode
+{
+  DEFAULT = 0,
+  DRIVING_RECORDER,
+};
+
 class OutgoingMessage
 {
 public:
@@ -71,7 +77,7 @@ class BagRecorder
 {
 public:
   //initializes the BagRecorder
-  BagRecorder(std::string data_folder, bool append_date = true);
+  BagRecorder(std::string data_folder, bool append_date = true, RecorderMode recorder_mode = RecorderMode::DEFAULT);
   ~BagRecorder();
 
   // flow control function - sets flags, starts threads, starts/kills subscribers
@@ -108,6 +114,7 @@ private:
   //my data
   std::string data_folder_;
   bool append_date_;
+  RecorderMode recorder_mode_;
   bool recording_all_topics_;
   unsigned long long min_recording_space_ = 1024 * 1024 * 1024;
   std::string min_recording_space_str_ = "1G";

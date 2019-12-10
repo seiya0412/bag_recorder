@@ -84,7 +84,7 @@ OutgoingMessage::OutgoingMessage(string const &_topic, topic_tools::ShapeShifter
 * @param [in] append_date whether or not to append the date to the bag_name
 * @details Initializes basic variables defining recorder behavior
 */
-BagRecorder::BagRecorder(std::string data_folder, bool append_date) : data_folder_(data_folder), append_date_(append_date)
+BagRecorder::BagRecorder(std::string data_folder, bool append_date, RecorderMode recorder_mode) : data_folder_(data_folder), append_date_(append_date), recorder_mode_(recorder_mode)
 {
 
   ros::NodeHandle nh;
