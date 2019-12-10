@@ -92,7 +92,9 @@ public:
   void check_all();
 
 private:
-  void Start_Recording(const bag_recorder::Rosbag::ConstPtr &msg);
+  void create_recorder(const bag_recorder::Rosbag::ConstPtr &msg);
+  bool start_queueing(const std::string &config);
+  void start_recording(const std::string &config, const std::string &bag_name);
   void Stop_Recording(const std_msgs::String::ConstPtr &msg);
   std::string sanitize_topic(std::string topic);
   bool load_config(std::string config_file_name, std::vector<std::string> &topics, std::set<std::string> loaded = std::set<std::string>());

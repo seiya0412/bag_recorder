@@ -33,7 +33,7 @@ BLOptions::BLOptions() : configuration_directory("/data/"),
 * Initializes name publisher if publish_name is true.
 */
 BagLauncher::BagLauncher(ros::NodeHandle nh, BLOptions options) : nh_(nh), config_location_(options.configuration_directory), data_folder_(options.data_directory),
-                                                                  record_start_subscriber_(nh.subscribe(options.record_start_topic, 10, &BagLauncher::Start_Recording, this)),
+                                                                  record_start_subscriber_(nh.subscribe(options.record_start_topic, 10, &BagLauncher::create_recorder, this)),
                                                                   record_stop_subscriber_(nh.subscribe(options.record_stop_topic, 10, &BagLauncher::Stop_Recording, this)),
                                                                   publish_name_(options.publish_name), publish_heartbeat_(options.publish_heartbeat),
                                                                   heartbeat_topic_(options.heartbeat_topic), heartbeat_interval_(options.heartbeat_interval),
@@ -63,66 +63,38 @@ BagLauncher::~BagLauncher()
 * Starts the recorder recording. Generates heartbeat publisher if enabled,
 * publishes bag name if enabled.
 */
-void BagLauncher::Start_Recording(const bag_recorder::Rosbag::ConstPtr &msg)
+void BagLauncher::create_recorder(const bag_recorder::Rosbag::ConstPtr &msg)
 {
+  RecorderMode recorder_mode = RecorderMode::DEFAULT;
+  if (msg->recorder_mode.compare("driving_recorder") == 0)
+  {
+    recorder_mode = RecorderMode::DRIVING_RECORDER;
+  }
+  else
+  {
+    recorder_mode = RecorderMode::DEFAULT;
+  }
+
   //find the recorder under that name if it exists already
   std::map<std::string, std::shared_ptr<BagRecorder>>::iterator recorder = recorders_.find(msg->config);
-
   //if it does not exists make it.
   if (recorder == recorders_.end())
   {
-    RecorderMode recorder_mode;
-    if (msg->recorder_mode.compare("driving_recorder"))
-    {
-      recorder_mode = RecorderMode::DRIVING_RECORDER;
-    }
-    else
-    {
-      recorder_mode = RecorderMode::DEFAULT;
-    }
-
     std::shared_ptr<BagRecorder> new_recorder(new BagRecorder(data_folder_, true, recorder_mode));
     recorders_[msg->config] = new_recorder;
   }
 
-  //make sure bag is not active.
-  if (recorders_[msg->config]->is_active())
+  if (!start_queueing(msg->config))
   {
-    ROS_WARN("Bag configuration %s is already recording to %s.", msg->config.c_str(), recorders_[msg->config]->get_bagname().c_str());
+    // Failed to start queing.
     return;
   }
-
-  //start recording
-  std::vector<std::string> topics;
-  std::string full_bag_name = "";
-  if (load_config(msg->config, topics))
+  if (recorder_mode == RecorderMode::DEFAULT)
   {
-    if (recorders_[msg->config]->start_queueing(topics))
-    {
-      full_bag_name = recorders_[msg->config]->start_recording(msg->bag_name);
-    }
-  }
-  else
-  {
-    ROS_ERROR("No such config: %s, was able to be loaded from. Recorder not started.", msg->config.c_str());
-    return;
+    // When recorder_mode is DRIVING_RECORDER, recording will be triggered later
+    start_recording(msg->config, msg->bag_name);
   }
 
-  //make sure there were no errors and bag was made
-  if (full_bag_name == "")
-  {
-    ROS_WARN("Error prevented %s configuration from recording.", msg->config.c_str());
-    return;
-  }
-
-  //publish bag name
-  if (publish_name_)
-  {
-    bag_recorder::Rosbag message;
-    message.config = msg->config;
-    message.bag_name = full_bag_name;
-    name_publisher_.publish(message);
-  }
   //publish heartbeat
   if (publish_heartbeat_)
   {
@@ -142,8 +114,56 @@ void BagLauncher::Start_Recording(const bag_recorder::Rosbag::ConstPtr &msg)
     //else start it
     heartbeats_[msg->config]->start();
   }
+}
 
-  ROS_INFO("Recording %s configuration to %s.", msg->config.c_str(), full_bag_name.c_str());
+bool BagLauncher::start_queueing(const std::string &config)
+{
+  //make sure bag is not active.
+  if (recorders_[config]->is_active())
+  {
+    ROS_WARN("Bag configuration %s is already recording to %s.", config.c_str(), recorders_[config]->get_bagname().c_str());
+    return false;
+  }
+
+  //start recording
+  std::vector<std::string> topics;
+  if (load_config(config, topics))
+  {
+    if (!recorders_[config]->start_queueing(topics))
+    {
+      ROS_ERROR("Failed to start queueing: %s, was invalid. Recorder not started.", config.c_str());
+      return false;
+    }
+  }
+  else
+  {
+    ROS_ERROR("No such config: %s, was able to be loaded from. Recorder not started.", config.c_str());
+    return false;
+  }
+  return true;
+}
+
+void BagLauncher::start_recording(const std::string &config, const std::string &bag_name)
+{
+  std::string full_bag_name = "";
+  full_bag_name = recorders_[config]->start_recording(bag_name);
+  //make sure there were no errors and bag was made
+  if (full_bag_name == "")
+  {
+    ROS_WARN("Error prevented %s configuration from recording.", config.c_str());
+    return;
+  }
+
+  //publish bag name
+  if (publish_name_)
+  {
+    bag_recorder::Rosbag message;
+    message.config = config;
+    message.bag_name = full_bag_name;
+    name_publisher_.publish(message);
+  }
+
+  ROS_INFO("Recording %s configuration to %s.", config.c_str(), full_bag_name.c_str());
 
   return;
 } // Start_Recording()
