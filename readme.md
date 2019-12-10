@@ -1,3 +1,5 @@
+Build Status: [![CircleCI](https://circleci.com/gh/seiya0412/bag_recorder.svg?style=svg)](https://circleci.com/gh/seiya0412/bag_recorder)
+---
 # ROS Bag Recorder
 ## Installing/Running the Recorder
 Clone this repository into the src/ folder of a ROS workspace. In the ROS workspace run the following commands.
