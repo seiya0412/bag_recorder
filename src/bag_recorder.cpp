@@ -113,6 +113,50 @@ BagRecorder::~BagRecorder() {
     delete message_queue_;
 }
 
+bool BagRecorder::start_queueing(std::vector<std::string> topics, bool record_all_topics)
+{
+  // message queing will be separated to another function
+  message_queue_ = new std::queue<OutgoingMessage>;
+
+  //test for asterisk to subscribe all topics
+  foreach (string const &topic, topics)
+  {
+    if (topic.find("*") != std::string::npos)
+    {
+      record_all_topics = true;
+    }
+  }
+
+  if (record_all_topics)
+  {
+    recording_all_topics_ = true;
+    subscribe_all();
+  }
+  else if (topics.size() > 0)
+  {
+    // Subscribe to specified topics
+    foreach (string const &topic, topics)
+      //prevent multiple subscriptions
+      if (subscribed_topics_.find(topic) == subscribed_topics_.end())
+      {
+        try
+        {
+          subscribers_.push_back(generate_subscriber(topic));
+        }
+        catch (ros::InvalidNameException)
+        {
+          ROS_ERROR("Invalid topic name: %s, no subscriber generated.", topic.c_str());
+        }
+      }
+  }
+  else
+  {
+    ROS_ERROR("No Topics Supplied to be recorded. Aborting.");
+    return false;
+  }
+  return true;
+}
+
 /**
 * @brief start_recording() starts the bag recorder
 * @param [in] bag_name root name of bag to be recorded.
@@ -120,7 +164,7 @@ BagRecorder::~BagRecorder() {
 * @return full name of bag that will be recorded to
 * @details locks start/stop mutex, generates full bagname, starts bag, starts write thread
 */
-std::string BagRecorder::start_recording(std::string bag_name, std::vector<std::string> topics, bool record_all_topics) {
+std::string BagRecorder::start_recording(std::string bag_name)
     boost::mutex::scoped_lock start_stop_lock(start_stop_mutex_);
 
     //will not start new bag_ if there is an active bag_ already
@@ -147,33 +191,10 @@ std::string BagRecorder::start_recording(std::string bag_name, std::vector<std::
     bag_name += string(".bag");
     bag_filename_ = data_folder_ + bag_name;
 
-    message_queue_ = new std::queue<OutgoingMessage>;
-
-    //test for asterisk to subscribe all topics
-    foreach(string const& topic, topics) {
-        if(topic.find("*") != std::string::npos) {
-            record_all_topics = true;
-        }
-    }
-
-    if(record_all_topics) {
-        recording_all_topics_ = true;
-        subscribe_all();
-    } else if(topics.size() > 0) {
-        // Subscribe to specified topics
-        foreach(string const& topic, topics)
-            //prevent multiple subscriptions
-            if (subscribed_topics_.find(topic) == subscribed_topics_.end()) {
-                try {
-                    subscribers_.push_back(generate_subscriber(topic));
-                } catch(ros::InvalidNameException) {
-                    ROS_ERROR("Invalid topic name: %s, no subscriber generated.", topic.c_str());
-                }
-            }
-    } else {
-        ROS_ERROR("No Topics Supplied to be recorded. Aborting bag %s.", bag_name.c_str());
-        return "";
-    }
+  /*
+    queue status check.
+    Queueing must be started before start recording
+  */
 
     // Open bag_ file for writing
     // This got moved here from queue_processor so all the errors that would

@@ -74,9 +74,8 @@ namespace bag_recorder {
             ~BagRecorder();
 
             // flow control function - sets flags, starts threads, starts/kills subscribers
-            std::string start_recording(std::string bag__name, std::vector<std::string> topics, bool record_all_topics = false); //-- initializes subscribers starts record thread, initializes all record variables, generates bag_ name
-            void stop_recording(); //-- kills subscribers, sets flag for write_thread to stop after queue is cleared
-            void immediate_stop_recording(); //-- kills subscribers, sets flag for write_thread to stop recording immediately
+  bool start_queueing(std::vector<std::string> topics, bool record_all_topics = false); //-- initializes subscribers starts record thread, initializes all record variables, generates bag_ name
+  std::string start_recording(std::string bag__name);                                   //-- initializes subscribers starts record thread, initializes all record variables, generates bag_ name
 
             //status check functions
             bool is_active(); //-- if there is a bag_ being recorded to

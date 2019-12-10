@@ -79,9 +79,10 @@ void BagLauncher::Start_Recording(const bag_recorder::Rosbag::ConstPtr& msg){
     //start recording
     std::vector<std::string> topics;
     std::string full_bag_name = "";
-    if(load_config(msg->config, topics)) {
-        full_bag_name = recorders_[msg->config]->start_recording(msg->bag_name, topics);
-    } else {
+    if (recorders_[msg->config]->start_queueing(topics))
+    {
+      full_bag_name = recorders_[msg->config]->start_recording(msg->bag_name);
+    }
         ROS_ERROR("No such config: %s, was able to be loaded from. Recorder not started.", msg->config.c_str());
         return;
     }
