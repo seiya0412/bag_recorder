@@ -5,7 +5,7 @@
         <!-- Directory containing configuration files for the bag launcher to read -->
         <param name="configuration_directory"   type="string"       value="$(find bag_recorder)/config"/>
         <!-- Directory for the bags to be recorded to -->
-        <param name="data_directory"            type="string"       value="/home/parallels/data/"/>
+        <param name="data_directory"            type="string"       value="/home/$(env USER)/bag/"/>
         <!-- Topic for bag launcher to listen to for launching bags -->
         <param name="start_bag_topic"           type="string"       value="/record/start"/>
         <!-- Topic for bag launcher to listen to for stopping bags -->
