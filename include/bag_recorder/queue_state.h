@@ -139,7 +139,7 @@ struct queue_msm_ : msm::front::state_machine_def<queue_msm_>
                              a_row<queue_filling, start_recording, queue_recording, &queue_msm_::start>,
                              g_row<queue_filling, push_message, queue_filled, &queue_msm_::push_filling>,
                              a_row<queue_filled, start_recording, queue_recording, &queue_msm_::start>,
-                             g_row<queue_filling, push_message, queue_recording, &queue_msm_::push_filled>,
+                             g_row<queue_filled, push_message, queue_recording, &queue_msm_::push_filled>,
                              _row<queue_recording, stop_recording, queue_closing>,
                              g_row<queue_recording, push_message, queue_closing, &queue_msm_::push_recording>,
                              g_row<queue_closing, push_message, queue_filling, &queue_msm_::push_closing> >
