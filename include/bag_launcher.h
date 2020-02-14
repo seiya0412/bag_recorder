@@ -40,6 +40,9 @@
 #include <ros/ros.h>
 #include <std_msgs/String.h>
 #include <bag_recorder/Rosbag.h>
+#include <bag_recorder/StartRecording.h>
+#include <bag_recorder/StopRecording.h>
+#include <bag_recorder/GetQueueState.h>
 
 //Bag Recorder
 #include <bag_recorder/bag_recorder.h>
@@ -51,64 +54,81 @@
 #include <string>
 #include <vector>
 
-namespace bag_launcher_node {
+namespace bag_launcher_node
+{
 
-    using namespace bag_recorder;
+using namespace bag_recorder;
 
-    struct BLOptions {
-        //initializes a struct of BagLauncher options with default values
-        BLOptions();
+struct BLOptions
+{
+  //initializes a struct of BagLauncher options with default values
+  BLOptions();
 
-        //! location to read config files from
-        std::string configuration_directory;
-        //! location to record bags to
-        std::string data_directory;
-        //! topic to listen to for start commands
-        std::string record_start_topic;
-        //! topic to listen to for stop commands
-        std::string record_stop_topic;
-        //! boolean whether or not to publish the bag name
-        bool publish_name;
-        //! if publish_name, topic to publish name to
-        std::string name_topic;
-        //! boolean whether or not to publish a heartbeat that the bag is recording
-        bool publish_heartbeat;
-        //! if publish_heartbeat, topic to publish a heartbeat to
-        std::string heartbeat_topic;
-        //! if publish_heartbeat, interval in seconds on which to publish the heartbeat
-        double heartbeat_interval;
-        //! if no config of a given name is found, default to record all if true
-        bool default_record_all;
-    };
+  //! location to read config files from
+  std::string configuration_directory;
+  //! location to record bags to
+  std::string data_directory;
+  //! topic to listen to for start commands
+  std::string record_start_topic;
+  //! topic to listen to for stop commands
+  std::string record_stop_topic;
+  //! boolean whether or not to publish the bag name
+  bool publish_name;
+  //! if publish_name, topic to publish name to
+  std::string name_topic;
+  //! boolean whether or not to publish a heartbeat that the bag is recording
+  bool publish_heartbeat;
+  //! if publish_heartbeat, topic to publish a heartbeat to
+  std::string heartbeat_topic;
+  //! if publish_heartbeat, interval in seconds on which to publish the heartbeat
+  double heartbeat_interval;
+  //! if no config of a given name is found, default to record all if true
+  bool default_record_all;
+};
 
-    class BagLauncher {
-        public:
-            BagLauncher(ros::NodeHandle nh, BLOptions options);
-            ~BagLauncher();
+class BagLauncher
+{
+public:
+  BagLauncher(ros::NodeHandle nh, BLOptions options);
+  ~BagLauncher();
 
-            void check_all();
+  void check_all();
 
-        private:
-            void Start_Recording(const bag_recorder::Rosbag::ConstPtr& msg);
-            void Stop_Recording(const std_msgs::String::ConstPtr& msg);
-            std::string sanitize_topic(std::string topic);
-            bool load_config(std::string config_file_name, std::vector<std::string>& topics, std::set<std::string> loaded = std::set<std::string>());
+private:
+  void create_recorder(const bag_recorder::Rosbag::ConstPtr &msg);
+  bool start_queueing(const std::string &config);
+  void start_recording(const std::string &config, const std::string &bag_name);
+  void stop_recording(const std::string &config);
+  void stop_queueing(const std::string &config);
+  void destroy_recorder(const std_msgs::String::ConstPtr &msg);
+  std::string sanitize_topic(std::string topic);
+  bool load_config(std::string config_file_name, std::vector<std::string> &topics, std::set<std::string> loaded = std::set<std::string>());
 
-        private:
-            ros::NodeHandle nh_;
-            std::string config_location_;
-            std::string data_folder_;
-            ros::Subscriber record_start_subscriber_;
-            ros::Subscriber record_stop_subscriber_;
-            bool publish_name_;
-            bool publish_heartbeat_;
-            std::string heartbeat_topic_;
-            double heartbeat_interval_;
-            ros::Publisher name_publisher_;
-            bool default_record_all_;
+  bool start_recording_callback(bag_recorder::StartRecording::Request &req,
+                                bag_recorder::StartRecording::Response &res);
+  bool stop_recording_callback(bag_recorder::StopRecording::Request &req,
+                               bag_recorder::StopRecording::Response &res);
+  bool get_queue_state(bag_recorder::GetQueueState::Request &req,
+                       bag_recorder::GetQueueState::Response &res);
 
-            std::map<std::string, std::shared_ptr<HeartBeat>> heartbeats_;
-            std::map<std::string, std::shared_ptr<BagRecorder>> recorders_;
-    }; //BagLauncher
+private:
+  ros::NodeHandle nh_;
+  std::string config_location_;
+  std::string data_folder_;
+  ros::Subscriber record_start_subscriber_;
+  ros::Subscriber record_stop_subscriber_;
+  ros::ServiceServer record_start_server_;
+  ros::ServiceServer record_stop_server_;
+  ros::ServiceServer queue_state_server_;
+  bool publish_name_;
+  bool publish_heartbeat_;
+  std::string heartbeat_topic_;
+  double heartbeat_interval_;
+  ros::Publisher name_publisher_;
+  bool default_record_all_;
 
-} // bag_launcher_node
+  std::map<std::string, std::shared_ptr<HeartBeat>> heartbeats_;
+  std::map<std::string, std::shared_ptr<BagRecorder>> recorders_;
+}; //BagLauncher
+
+} // namespace bag_launcher_node
