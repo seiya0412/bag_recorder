@@ -15,13 +15,13 @@ struct queue_idle : msm::front::state<>
   template <class event_t, class fsm_t>
   void on_entry(event_t const& e, fsm_t& machine)
   {
-    std::cout << "entry: idle" << std::endl;
+    ROS_DEBUG("entry: idle");
   }
 
   template <class event_t, class fsm_t>
   void on_exit(event_t const& e, fsm_t& machine)
   {
-    std::cout << "exit: idle" << std::endl;
+    ROS_DEBUG("exit: idle");
   }
 };
 struct queue_filling : msm::front::state<>
@@ -29,13 +29,13 @@ struct queue_filling : msm::front::state<>
   template <class event_t, class fsm_t>
   void on_entry(event_t const& e, fsm_t& machine)
   {
-    std::cout << "entry: filling" << std::endl;
+    ROS_DEBUG("entry: filling");
   }
 
   template <class event_t, class fsm_t>
   void on_exit(event_t const& e, fsm_t& machine)
   {
-    std::cout << "exit: filling" << std::endl;
+    ROS_DEBUG("exit: filling");
   }
 };
 struct queue_filled : msm::front::state<>
@@ -43,13 +43,13 @@ struct queue_filled : msm::front::state<>
   template <class event_t, class fsm_t>
   void on_entry(event_t const& e, fsm_t& machine)
   {
-    std::cout << "entry: filled" << std::endl;
+    ROS_DEBUG("entry: filled");
   }
 
   template <class event_t, class fsm_t>
   void on_exit(event_t const& e, fsm_t& machine)
   {
-    std::cout << "exit: filled" << std::endl;
+    ROS_DEBUG("exit: filled");
   }
 };
 struct queue_recording : msm::front::state<>
@@ -57,13 +57,13 @@ struct queue_recording : msm::front::state<>
   template <class event_t, class fsm_t>
   void on_entry(event_t const& e, fsm_t& machine)
   {
-    std::cout << "entry: recording" << std::endl;
+    ROS_DEBUG("entry: recording");
   }
 
   template <class event_t, class fsm_t>
   void on_exit(event_t const& e, fsm_t& machine)
   {
-    std::cout << "exit: recording" << std::endl;
+    ROS_DEBUG("exit: recording");
   }
 };
 struct queue_closing : msm::front::state<>
@@ -71,13 +71,13 @@ struct queue_closing : msm::front::state<>
   template <class event_t, class fsm_t>
   void on_entry(event_t const& e, fsm_t& machine)
   {
-    std::cout << "entry: closing" << std::endl;
+    ROS_DEBUG("entry: closing");
   }
 
   template <class event_t, class fsm_t>
   void on_exit(event_t const& e, fsm_t& machine)
   {
-    std::cout << "exit: closing" << std::endl;
+    ROS_DEBUG("exit: closing");
   }
 };
 
@@ -157,7 +157,7 @@ struct queue_msm_ : msm::front::state_machine_def<queue_msm_>
   template <class FSM, class Event>
   void no_transition(Event const& e, FSM&, int state)
   {
-    std::cout << "no transition from state " << state << " on event " << typeid(e).name() << std::endl;
+    ROS_DEBUG("no transition from state %d on event %s", state, typeid(e).name());
   }
 
 public:
