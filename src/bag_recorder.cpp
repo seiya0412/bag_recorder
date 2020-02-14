@@ -87,10 +87,18 @@ OutgoingMessage::OutgoingMessage(string const &                      _topic,
  * @param [in] append_date whether or not to append the date to the bag_name
  * @details Initializes basic variables defining recorder behavior
  */
-BagRecorder::BagRecorder(std::string data_folder, bool append_date, RecorderMode recorder_mode)
-  : data_folder_(data_folder), append_date_(append_date), recorder_mode_(recorder_mode)
+BagRecorder::BagRecorder(std::string  data_folder,
+                         bool         append_date,
+                         RecorderMode recorder_mode,
+                         double       max_queue_duration,
+                         double       max_record_duration)
+  : data_folder_(data_folder)
+  , append_date_(append_date)
+  , recorder_mode_(recorder_mode)
+  , queue_machine_(max_queue_duration, max_record_duration)
 {
   ros::NodeHandle nh;
+  queue_machine_.start();
 
   // ros needs to be working, we check this before we spend a ton of time waiting for a valid time.
   if(!nh.ok())
@@ -120,7 +128,6 @@ bool BagRecorder::start_queueing(std::vector<std::string> topics, bool record_al
 {
   // message queing will be separated to another function
   message_queue_ = std::make_shared<message_queue_t>();
-  queue_transaction_.attachMessageQueue(message_queue_);
 
   // test for asterisk to subscribe all topics
   foreach(string const &topic, topics)
@@ -159,7 +166,9 @@ bool BagRecorder::start_queueing(std::vector<std::string> topics, bool record_al
     return false;
   }
 
-  return queue_transaction_.open();
+  queue_state::open_queue oq{ message_queue_ };
+  queue_machine_.process_event(oq);
+  return true;
 }
 
 /**
@@ -223,8 +232,7 @@ std::string BagRecorder::start_recording(std::string bag_name)
   }
 
   // start write thread
-  if(!queue_transaction_.start())
-    return "";
+  queue_machine_.process_event(queue_state::start_recording());
   record_thread_ = boost::thread(boost::bind(&BagRecorder::queue_processor, this));
   queue_condition_.notify_all();
 
@@ -244,7 +252,7 @@ void BagRecorder::stop_recording()
     return;
 
   clear_queue_signal_ = true;
-  queue_transaction_.close();
+  queue_machine_.process_event(queue_state::stop_recording());
   ROS_INFO("Stopping BagRecorder, clearing queue.");
 }
 
@@ -394,7 +402,8 @@ void BagRecorder::subscriber_callback(const ros::MessageEvent<topic_tools::Shape
 
   {  // writes message to queue
     boost::mutex::scoped_lock queue_lock(queue_mutex_);
-    queue_transaction_.push(out);
+    queue_state::push_message pm{ &out };
+    queue_machine_.process_event(pm);
     // stop_recording
   }
 
@@ -628,5 +637,10 @@ std::string BagRecorder::get_time_str()
   msg << now;
   return msg.str();
 }  // get_time_str()
+
+int BagRecorder::get_queue_state()
+{
+  return *(queue_machine_.current_state());
+}
 
 }  // namespace bag_recorder
