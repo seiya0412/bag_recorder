@@ -283,6 +283,7 @@ void BagRecorder::immediate_stop_recording()
     return;
 
   stop_signal_ = true;
+  queue_machine_.process_event(queue_state::stop_recording());
 
   foreach(boost::shared_ptr<ros::Subscriber> sub, subscribers_)
     sub->shutdown();
