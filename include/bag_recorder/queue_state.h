@@ -13,13 +13,13 @@ namespace queue_state
 struct queue_idle : msm::front::state<>
 {
   template <class event_t, class fsm_t>
-  void on_entry(event_t const& e, fsm_t& machine)
+  void on_entry(event_t const&, fsm_t&)
   {
     ROS_DEBUG("entry: idle");
   }
 
   template <class event_t, class fsm_t>
-  void on_exit(event_t const& e, fsm_t& machine)
+  void on_exit(event_t const&, fsm_t&)
   {
     ROS_DEBUG("exit: idle");
   }
@@ -27,13 +27,13 @@ struct queue_idle : msm::front::state<>
 struct queue_filling : msm::front::state<>
 {
   template <class event_t, class fsm_t>
-  void on_entry(event_t const& e, fsm_t& machine)
+  void on_entry(event_t const&, fsm_t&)
   {
     ROS_DEBUG("entry: filling");
   }
 
   template <class event_t, class fsm_t>
-  void on_exit(event_t const& e, fsm_t& machine)
+  void on_exit(event_t const&, fsm_t&)
   {
     ROS_DEBUG("exit: filling");
   }
@@ -41,13 +41,13 @@ struct queue_filling : msm::front::state<>
 struct queue_filled : msm::front::state<>
 {
   template <class event_t, class fsm_t>
-  void on_entry(event_t const& e, fsm_t& machine)
+  void on_entry(event_t const&, fsm_t&)
   {
     ROS_DEBUG("entry: filled");
   }
 
   template <class event_t, class fsm_t>
-  void on_exit(event_t const& e, fsm_t& machine)
+  void on_exit(event_t const&, fsm_t&)
   {
     ROS_DEBUG("exit: filled");
   }
@@ -55,13 +55,13 @@ struct queue_filled : msm::front::state<>
 struct queue_recording : msm::front::state<>
 {
   template <class event_t, class fsm_t>
-  void on_entry(event_t const& e, fsm_t& machine)
+  void on_entry(event_t const&, fsm_t&)
   {
     ROS_DEBUG("entry: recording");
   }
 
   template <class event_t, class fsm_t>
-  void on_exit(event_t const& e, fsm_t& machine)
+  void on_exit(event_t const&, fsm_t&)
   {
     ROS_DEBUG("exit: recording");
   }
@@ -69,13 +69,13 @@ struct queue_recording : msm::front::state<>
 struct queue_closing : msm::front::state<>
 {
   template <class event_t, class fsm_t>
-  void on_entry(event_t const& e, fsm_t& machine)
+  void on_entry(event_t const&, fsm_t&)
   {
     ROS_DEBUG("entry: closing");
   }
 
   template <class event_t, class fsm_t>
-  void on_exit(event_t const& e, fsm_t& machine)
+  void on_exit(event_t const&, fsm_t&)
   {
     ROS_DEBUG("exit: closing");
   }
@@ -106,7 +106,7 @@ struct queue_msm_ : msm::front::state_machine_def<queue_msm_>
     message_queue_    = ev.queue;
     queue_start_time_ = ros::Time::now();
   }
-  void start(start_recording const& ev)
+  void start(start_recording const&)
   {
     record_start_time_ = ros::Time::now();
   }
@@ -128,7 +128,7 @@ struct queue_msm_ : msm::front::state_machine_def<queue_msm_>
     ros::Duration record_duration = ros::Time::now() - record_start_time_;
     return (record_duration > max_record_duration_);
   }
-  bool push_closing(push_message const& ev)
+  bool push_closing(push_message const&)
   {
     queue_start_time_ = ros::Time::now();
     return (message_queue_->empty());

@@ -146,7 +146,7 @@ bool BagLauncher::start_queueing(const std::string &config)
 }
 
 bool BagLauncher::start_recording_callback(bag_recorder::StartRecording::Request &req,
-                                           bag_recorder::StartRecording::Response &res)
+                                           bag_recorder::StartRecording::Response&)
 {
   start_recording(req.config, req.bag_name);
   return true;
